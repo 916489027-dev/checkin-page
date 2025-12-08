@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>扫码签到</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; }
+    input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
+    button { width: 100%; padding: 14px; background: #3B82F6; color: white; border: none; border-radius: 6px; font-size: 16px; }
+    #msg { margin-top: 15px; text-align: center; min-height: 24px; }
+  </style>
+</head>
+<body>
+  <h2>活动签到</h2>
+  <form id="form">
+    <input type="text" id="name" placeholder="请输入姓名" required />
+    <input type="tel" id="phone" placeholder="请输入手机号" required />
+    <button type="submit">立即签到</button>
+  </form>
+  <div id="msg"></div>
+
+  <script>
+    // 👇 替换成你的 Supabase 信息
+    const SUPABASE_URL = 'https://jibgyawyvyihwqwrwdef.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppYmd5YXd5dnlpaHdxd3J3ZGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDQwMzcsImV4cCI6MjA4MDc4MDAzN30.tQlHfVFxJNdqW0QkaBw4LiSUKWWyCcRL6kuJ84CCM6w';
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const msgEl = document.getElementById('msg');
+      msgEl.innerHTML = '提交中...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/signups`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ name, phone })
+        });
+
+        if (res.ok) {
+          msgEl.innerHTML = '✅ 签到成功！';
+          document.getElementById('form').reset();
+        } else {
+          const err = await res.json();
+          msgEl.innerHTML = '❌ ' + (err.message || '提交失败');
+        }
+      } catch (err) {
+        console.error(err);
+        msgEl.innerHTML = '❌ 网络错误，请重试';
+      }
+    });
+  </script>
+</body>
+</html>
