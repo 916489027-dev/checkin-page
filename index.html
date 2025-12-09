@@ -20,42 +20,58 @@
   </form>
   <div id="msg"></div>
 
-  <script>
-    // 👇 替换成你的 Supabase 信息
-    const SUPABASE_URL = 'https://jibgyawyvyihwqwrwdef.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppYmd5YXd5dnlpaHdxd3J3ZGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDQwMzcsImV4cCI6MjA4MDc4MDAzN30.tQlHfVFxJNdqW0QkaBw4LiSUKWWyCcRL6kuJ84CCM6w';
+<script>
+  // 👇 替换成你的 Supabase 信息
+  const SUPABASE_URL = 'https://jibgyawyvyihwqwrwdef.supabase.co'; // ← 填你的 URL
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppYmd5YXd5dnlpaHdxd3J3ZGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDQwMzcsImV4cCI6MjA4MDc4MDAzN30.tQlHfVFxJNdqW0QkaBw4LiSUKWWyCcRL6kuJ84CCM6w'; // ← 填你的 anon key（来自 Settings → API）
 
-    document.getElementById('form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      const msgEl = document.getElementById('msg');
-      msgEl.innerHTML = '提交中...';
+  document.getElementById('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const msgEl = document.getElementById('msg');
 
-      try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/signups`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({ name, phone })
-        });
+    if (!name || !phone) {
+      msgEl.innerHTML = '❌ 请填写姓名和手机号';
+      return;
+    }
 
-        if (res.ok) {
-          msgEl.innerHTML = '✅ 签到成功！';
-          document.getElementById('form').reset();
+    msgEl.innerHTML = '提交中...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/signups`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          // ⚠️ 删除了这行 ↓（不需要 Authorization）
+          // 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ name, phone })
+      });
+
+      if (res.ok) {
+        msgEl.innerHTML = '✅ 签到成功！';
+        document.getElementById('form').reset();
+      } else {
+        const err = await res.json();
+        const errorMsg = err.message || '';
+
+        // ✅ 检测手机号重复（唯一约束冲突）
+        if (res.status === 409 && errorMsg.includes('signups_phone_key')) {
+          msgEl.innerHTML = '❌ 该人员已签到，请确认手机号';
         } else {
-          const err = await res.json();
-          msgEl.innerHTML = '❌ ' + (err.message || '提交失败');
+          // 其他错误（如RLS拒绝、网络问题等）
+          msgEl.innerHTML = '❌ 提交失败，请重试';
+          console.error('Supabase error:', err);
         }
-      } catch (err) {
-        console.error(err);
-        msgEl.innerHTML = '❌ 网络错误，请重试';
       }
-    });
-  </script>
+    } catch (err) {
+      console.error(err);
+      msgEl.innerHTML = '❌ 网络错误，请重试';
+    }
+  });
+</script>
 </body>
 </html>
